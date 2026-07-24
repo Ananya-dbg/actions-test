@@ -1,0 +1,76 @@
+name: PR Fast Quality Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+
+jobs:
+  quality-checks:
+    name: Code Quality and Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the code (fetch-depth: 0 is required to calculate changed files)
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. Set up JDK with Maven Caching
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # 3. Detect Changed Java Files
+      - name: Get Changed Java Files
+        id: changed-files
+        uses: tj-actions/changed-files@v41
+        with:
+          files: |
+            **/*.java
+
+      # 4. Format changed files relative paths for Checkstyle includes
+      # Converts "src/main/java/com/App.java" into "com/App.java" for Maven
+      - name: Format Files for Checkstyle
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          CHANGED_LIST="${{ steps.changed-files.outputs.all_changed_files }}"
+          FORMATTED_LIST=$(echo "$CHANGED_LIST" | sed 's|src/main/java/||g' | sed 's|src/test/java/||g' | tr ' ' ',')
+          echo "CHECKSTYLE_INCLUDES=$FORMATTED_LIST" >> $GITHUB_ENV
+          echo "Detected changed files for scanning: $FORMATTED_LIST"
+
+      # 5. Restore PMD Cache (Avoids scanning unchanged files across workflow runs)
+      - name: Restore PMD Cache
+        uses: actions/cache@v4
+        with:
+          path: .pmdCache
+          key: ${{ runner.os }}-pmd-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-pmd-
+
+      # 6. Run Fast Unit Tests & Quality Checks
+      # -T 1C uses multi-threading to compile faster.
+      # We pass our list of modified files to Checkstyle.
+      - name: Run Build and Quality Gates
+        run: |
+          # If no java files changed, we can skip Checkstyle to save even more time
+          CHECKSTYLE_OPTS=""
+          if [ "${{ steps.changed-files.outputs.any_changed }}" = "true" ]; then
+            CHECKSTYLE_OPTS="-Dcheckstyle.includes=${{ env.CHECKSTYLE_INCLUDES }}"
+          else
+            CHECKSTYLE_OPTS="-Dcheckstyle.skip=true"
+          fi
+
+          # Execute Maven lifecycle
+          mvn -f pom-ci.xml clean test \
+            $CHECKSTYLE_OPTS \
+            -Dpmd.incrementalAnalysis=true \
+            -Dpmd.cacheFile=$(pwd)/.pmdCache \
+            -Dspotbugs.failOnError=true \
+            -T 1C
