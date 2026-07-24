@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN" "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<module name="Checker">
+    <module name="TreeWalker">
+        <!-- 6. Logging in Code: Block System.out and printStackTrace -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="System\.out\.print"/>
+            <property name="message" value="CRITICAL: Do not use System.out.println. Use a dedicated logger."/>
+            <property name="ignoreComments" value="true"/>
+        </module>
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="\.printStackTrace\(\)"/>
+            <property name="message" value="CRITICAL: Do not print raw stacktraces. Use logger.error(..., e) instead."/>
+            <property name="ignoreComments" value="true"/>
+        </module>
+
+        <!-- 7. Naming Conventions: Enforce camelCase for local variables and methods -->
+        <module name="MethodName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+        </module>
+        <module name="LocalVariableName"/>
+        <module name="MemberName"/>
+        <module name="ParameterName"/>
+    </module>
+</module>
