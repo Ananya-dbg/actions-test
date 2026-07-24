@@ -14,7 +14,7 @@ public class DemoApp {
     public boolean processValue(int value) {
         // Enforce camelCase variables (Checkstyle Rule)
         int calculatedResult = value * 2;
-
+        System.out.println("Printing to console..."); // Banned by Checkstyle
         if (calculatedResult > MAX_ALLOWED_VALUE) {
             LOGGER.info("Value exceeded maximum allowed value.");
             return true;
