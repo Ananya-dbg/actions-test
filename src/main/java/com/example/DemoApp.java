@@ -11,7 +11,7 @@ public class DemoApp {
     private static final Logger LOGGER = Logger.getLogger(DemoApp.class.getName());
     private static final int MAX_ALLOWED_VALUE = 10; // Extract magic numbers to constant (PMD Rule)
 
-    public boolean process-value(int value) {
+    public boolean process_value(int value) {
         // Enforce camelCase variables (Checkstyle Rule)
         int calculatedResult = value * 2;
 
