@@ -15,7 +15,7 @@ public class DemoApp {
         // Enforce camelCase variables (Checkstyle Rule)
         int calculatedResult = value * 2;
 
-        if (calculatedResult > MAX_ALLOWED_VALUE) {
+        if (calculatedResult > 99) {
             LOGGER.info("Value exceeded maximum allowed value.");
             return true;
         }
