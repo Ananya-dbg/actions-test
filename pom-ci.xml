@@ -49,6 +49,44 @@
                 <version>3.11.0</version>
             </plugin>
 
+            <!-- ================================================================= -->
+            <!-- 11. JUnit & Integration Tests (Surefire & Failsafe)               -->
+            <!-- ================================================================= -->
+            <!-- Surefire: Automatically executes standard Unit Tests (*Test.java) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
+
+            <!-- Failsafe: Automatically executes Integration Tests (*IT.java) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>3.2.5</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <includes>
+                        <include>**/*IT.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
+
+            <!-- ================================================================= -->
+            <!-- Static Analysis & Quality Gate Plugins                            -->
+            <!-- ================================================================= -->
             <!-- 6 & 7. Checkstyle Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
