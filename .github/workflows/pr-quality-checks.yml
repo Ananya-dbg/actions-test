@@ -67,8 +67,8 @@ jobs:
             CHECKSTYLE_OPTS="-Dcheckstyle.skip=true"
           fi
 
-          # Execute Maven lifecycle
-          mvn -f pom-ci.xml clean test \
+          # FIXED: changed "test" to "verify" to trigger PMD and SpotBugs
+          mvn -f pom-ci.xml clean verify \
             $CHECKSTYLE_OPTS \
             -Dpmd.incrementalAnalysis=true \
             -Dpmd.cacheFile=$(pwd)/.pmdCache \
