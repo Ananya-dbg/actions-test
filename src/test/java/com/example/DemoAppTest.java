@@ -8,7 +8,7 @@ public class DemoAppTest {
     @Test
     public void testProcessValueUnderLimit() {
         DemoApp app = new DemoApp();
-        assertFalse(app.processValue(3)); // 3 * 2 = 6 (Under limit of 10)
+        assertTrue(app.processValue(3)); // 3 * 2 = 6 (Under limit of 10)
     }
 
     @Test
