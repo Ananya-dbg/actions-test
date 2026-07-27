@@ -11,7 +11,7 @@
 
     <!-- 9. Exception Handling (Blocks empty catch blocks & catching generic Exception) -->
     <rule ref="category/java/errorprone.xml/EmptyCatchBlock" />
-    <rule ref="category/java/errorprone.xml/AvoidCatchingGenericException" />
+    <rule ref="category/java/design.xml/AvoidCatchingGenericException" />         
 
     <!-- 10. Dead Code Deletion (Blocks unused fields, unused variables, & unused private methods) -->
     <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod" />
