@@ -9,13 +9,12 @@ import java.util.logging.Logger;
 public class DemoApp {
 
     private static final Logger LOGGER = Logger.getLogger(DemoApp.class.getName());
-    private static final int MAX_ALLOWED_VALUE = 10; // Extract magic numbers to constant (PMD Rule)
 
     public boolean processValue(int value) {
         // Enforce camelCase variables (Checkstyle Rule)
         int calculatedResult = value * 2;
 
-        if (calculatedResult > MAX_ALLOWED_VALUE) {
+        if (calculatedResult > 10) {
             LOGGER.info("Value exceeded maximum allowed value.");
             return true;
         }
