@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout the code (fetch-depth: 0 is required to calculate changed files)
+      # 1. Checkout the code
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
@@ -35,8 +35,7 @@ jobs:
           files: |
             **/*.java
 
-      # 4. Format changed files relative paths for Checkstyle includes
-      # Converts "src/main/java/com/App.java" into "com/App.java" for Maven
+      # 4. Format changed files relative paths for Checkstyle
       - name: Format Files for Checkstyle
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
@@ -45,7 +44,7 @@ jobs:
           echo "CHECKSTYLE_INCLUDES=$FORMATTED_LIST" >> $GITHUB_ENV
           echo "Detected changed files for scanning: $FORMATTED_LIST"
 
-      # 5. Restore PMD Cache (Avoids scanning unchanged files across workflow runs)
+      # 5. Restore PMD Cache
       - name: Restore PMD Cache
         uses: actions/cache@v4
         with:
@@ -54,12 +53,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pmd-
 
-      # 6. Run Fast Unit Tests & Quality Checks
-      # -T 1C uses multi-threading to compile faster.
-      # We pass our list of modified files to Checkstyle.
+      # 6. Run Fast Unit Tests & Quality Checks (In Quiet Mode)
       - name: Run Build and Quality Gates
         run: |
-          # If no java files changed, we can skip Checkstyle to save even more time
           CHECKSTYLE_OPTS=""
           if [ "${{ steps.changed-files.outputs.any_changed }}" = "true" ]; then
             CHECKSTYLE_OPTS="-Dcheckstyle.includes=${{ env.CHECKSTYLE_INCLUDES }}"
@@ -67,10 +63,60 @@ jobs:
             CHECKSTYLE_OPTS="-Dcheckstyle.skip=true"
           fi
 
-          # FIXED: changed "test" to "verify" to trigger PMD and SpotBugs
-          mvn -f pom-ci.xml clean verify \
+          mvn -f pom-ci.xml clean verify -q \
             $CHECKSTYLE_OPTS \
             -Dpmd.incrementalAnalysis=true \
             -Dpmd.cacheFile=$(pwd)/.pmdCache \
             -Dspotbugs.failOnError=true \
             -T 1C
+
+      # 7. NEW STEP: Parse the XML results and generate an instant Summary
+      - name: Generate Quality Gate Summary
+        if: always() # Run even if previous steps failed so we can parse errors
+        run: |
+          python -c '
+          import xml.etree.ElementTree as ET
+          import os
+
+          summary_content = "## 🔍 Code Quality Gate Summary\n\n"
+
+          # 1. Parse Checkstyle
+          if os.path.exists("target/checkstyle-result.xml"):
+              tree = ET.parse("target/checkstyle-result.xml")
+              root = tree.getroot()
+              violations = []
+              for file in root.findall("file"):
+                  filename = os.path.basename(file.get("name"))
+                  for error in file.findall("error"):
+                      violations.append((filename, error.get("line"), error.get("message")))
+              if violations:
+                  summary_content += "### 🎨 Checkstyle Violations\n\n"
+                  summary_content += "| File | Line | Message |\n"
+                  summary_content += "| --- | --- | --- |\n"
+                  for filename, line, msg in violations:
+                      summary_content += f"| {filename} | {line} | {msg} |\n"
+                  summary_content += "\n"
+
+          # 2. Parse PMD
+          if os.path.exists("target/pmd.xml"):
+              tree = ET.parse("target/pmd.xml")
+              root = tree.getroot()
+              violations = []
+              # Handle PMD namespace
+              ns = {"pmd": "http://pmd.sourceforge.net/ruleset/2.0.0"}
+              for file in root.findall(".//pmd:file", ns):
+                  filename = os.path.basename(file.get("name"))
+                  for violation in file.findall("pmd:violation", ns):
+                      violations.append((filename, violation.get("beginline"), violation.get("rule"), violation.text.strip()))
+              if violations:
+                  summary_content += "### ⚠️ PMD Violations\n\n"
+                  summary_content += "| File | Line | Rule | Message |\n"
+                  summary_content += "| --- | --- | --- | --- |\n"
+                  for filename, line, rule, msg in violations:
+                      summary_content += f"| {filename} | {line} | {rule} | {msg} |\n"
+                  summary_content += "\n"
+
+          # Write directly to GitHub Action step summary
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write(summary_content)
+          '
