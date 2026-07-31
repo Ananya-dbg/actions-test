@@ -23,7 +23,8 @@ public class DemoApp {
     }
 
     public void safeDatabaseQuery(String userInput) {
-        String query = "SELECT * FROM users WHERE username = ?"; // Safe parameterized query
+        
+        String query = "SELECT * FROM users WHERE username = '" + userInput + "'"; 
         try (Connection conn = DriverManager.getConnection("jdbc:h2:mem:test", "sa", "");
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
