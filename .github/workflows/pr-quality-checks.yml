@@ -63,7 +63,7 @@ jobs:
             CHECKSTYLE_OPTS="-Dcheckstyle.skip=true"
           fi
 
-          mvn -f pom-ci.xml clean verify -q \
+          mvn -f pom-ci.xml clean verify --no-transfer-progress \
             $CHECKSTYLE_OPTS \
             -Dpmd.incrementalAnalysis=true \
             -Dpmd.cacheFile=$(pwd)/.pmdCache \
