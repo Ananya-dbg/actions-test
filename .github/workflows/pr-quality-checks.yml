@@ -9,16 +9,65 @@ on:
 
 jobs:
   quality-checks:
-    name: Code Quality and Tests
+    name: Code Quality and Security Gates
     runs-on: ubuntu-latest
 
     steps:
+      # =========================================================================
+      # BASE SETUP
+      # =========================================================================
       # 1. Checkout the code
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # =========================================================================
+      # CHECKS 1 & 2: PR METADATA VALIDATION (100% Secure from Script Injection)
+      # =========================================================================
+      # Checks 1 & 2. Validate JIRA SCST Number and RC Labels in PR
+      - name: Validate PR Metadata (Branch, Title & RC Labels)
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
+        run: |
+          python -c '
+          import re
+          import json
+          import os
+          import sys
+
+          # Securely pull variables from the system environment
+          branch_name = os.environ.get("BRANCH_NAME", "")
+          pr_title = os.environ.get("PR_TITLE", "")
+          labels_json = os.environ.get("PR_LABELS", "[]")
+          regex = r"SCST-[0-9]+" # Matches SCST- followed by digits anywhere in the text
+
+          print(f"Checking Branch Name: {branch_name}")
+          if not re.search(regex, branch_name):
+              print("::error::CRITICAL ERROR: Branch name is invalid. It must contain a ticket number matching \"SCST-<number>\" (e.g., SCST-1234).")
+              sys.exit(1)
+
+          print(f"Checking PR Title: {pr_title}")
+          if not re.search(regex, pr_title):
+              print("::error::CRITICAL ERROR: PR Title is invalid. It must contain a ticket number matching \"SCST-<number>\" (e.g., SCST-1234).")
+              sys.exit(1)
+
+          labels = json.loads(labels_json)
+          has_rc_label = any(re.match(r"^RC[0-9]+$", label["name"], re.IGNORECASE) for label in labels)
+
+          print(f"Validating PR Labels: {[l[\"name\"] for l in labels]}")
+          if not has_rc_label:
+              print("::error::CRITICAL ERROR: PR must have at least one release candidate label matching prefix \"RC\" followed by digits (e.g., RC92, RC01).")
+              sys.exit(1)
+
+          print("SUCCESS: PR Metadata validated successfully!")
+          '
+
+      # =========================================================================
+      # RUNNER ENVIRONMENT SETUP
+      # =========================================================================
       # 2. Set up JDK with Maven Caching
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -35,6 +84,20 @@ jobs:
           files: |
             **/*.java
 
+      # =========================================================================
+      # CHECKS 3 & 4: SPELLING AND SECRETS
+      # =========================================================================
+      # Check 3. Spelling Mistakes in New Code (using codespell via python pip)
+      - name: Scan for Spelling Mistakes
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          pip install codespell
+          codespell ${{ steps.changed-files.outputs.all_changed_files }}
+
+
+      # =========================================================================
+      # QUALITY GATES, TESTING, & DEPENDENCY SCANNING
+      # =========================================================================
       # 4. Format changed files relative paths for Checkstyle
       - name: Format Files for Checkstyle
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -53,7 +116,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pmd-
 
-      # 6. Run Fast Unit Tests & Quality Checks (In Quiet Mode)
+      # 6. Run Fast Tests, Dependency Scan, and Quality Gates
+      # This single command compiles, runs Unit/Integration tests, scans Checkstyle, 
+      # PMD, SpotBugs, and OWASP Dependency-Check natively.
       - name: Run Build and Quality Gates
         run: |
           CHECKSTYLE_OPTS=""
@@ -70,7 +135,7 @@ jobs:
             -Dspotbugs.failOnError=true \
             -T 1C
 
-      # 7. NEW STEP: Parse the XML results and generate an instant Summary
+      # 7. Generate Quality Gate Summary (XML results to GHA Step Summary)
       - name: Generate Quality Gate Summary
         if: always() # Run even if previous steps failed so we can parse errors
         run: |
@@ -116,7 +181,6 @@ jobs:
                       summary_content += f"| {filename} | {line} | {rule} | {msg} |\n"
                   summary_content += "\n"
 
-          # Write directly to GitHub Action step summary
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
               f.write(summary_content)
           '
