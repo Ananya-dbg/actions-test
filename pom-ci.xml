@@ -64,7 +64,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Failsafe: Automatically executes Integration Tests (*IT.java) -->
+            <!-- Failsafe: Automatically executes Integration Tests(*IT.java) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
