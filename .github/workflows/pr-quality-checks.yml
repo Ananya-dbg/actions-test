@@ -2,6 +2,7 @@ name: PR Fast Quality Checks
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     branches:
       - main
       - master
