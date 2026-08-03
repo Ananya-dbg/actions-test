@@ -16,14 +16,14 @@ jobs:
       # =========================================================================
       # BASE SETUP
       # =========================================================================
-      # 1. Checkout the code
+      # 1. Checkout the code (fetch-depth: 0 is required to calculate changed files)
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       # =========================================================================
-      # CHECKS 1 & 2: PR METADATA VALIDATION (100% Secure from Script Injection)
+      # CHECKS 1 & 2: PR METADATA VALIDATION (Secured with Env Vars & Heredoc)
       # =========================================================================
       # Checks 1 & 2. Validate JIRA SCST Number and RC Labels in PR
       - name: Validate PR Metadata (Branch, Title & RC Labels)
@@ -32,41 +32,41 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
         run: |
-          python -c '
+          python << 'EOF'
           import re
           import json
           import os
           import sys
 
-          # Securely pull variables from the system environment
+          # Python securely reads the variables from the OS Environment
           branch_name = os.environ.get("BRANCH_NAME", "")
           pr_title = os.environ.get("PR_TITLE", "")
           labels_json = os.environ.get("PR_LABELS", "[]")
-          regex = r"SCST-[0-9]+" # Matches SCST- followed by digits anywhere in the text
+          regex = r"SCST-[0-9]+"
 
           print(f"Checking Branch Name: {branch_name}")
           if not re.search(regex, branch_name):
-              print("::error::CRITICAL ERROR: Branch name is invalid. It must contain a ticket number matching \"SCST-<number>\" (e.g., SCST-1234).")
+              print("::error::CRITICAL: Branch name is invalid. It must contain a ticket number matching 'SCST-<number>' (e.g., SCST-1234).")
               sys.exit(1)
 
           print(f"Checking PR Title: {pr_title}")
           if not re.search(regex, pr_title):
-              print("::error::CRITICAL ERROR: PR Title is invalid. It must contain a ticket number matching \"SCST-<number>\" (e.g., SCST-1234).")
+              print("::error::CRITICAL: PR Title is invalid. It must contain a ticket number matching 'SCST-<number>' (e.g., SCST-1234).")
               sys.exit(1)
 
           labels = json.loads(labels_json)
           has_rc_label = any(re.match(r"^RC[0-9]+$", label["name"], re.IGNORECASE) for label in labels)
 
-          print(f"Validating PR Labels: {[l[\"name\"] for l in labels]}")
+          print(f"Validating PR Labels: {[l['name'] for l in labels]}")
           if not has_rc_label:
-              print("::error::CRITICAL ERROR: PR must have at least one release candidate label matching prefix \"RC\" followed by digits (e.g., RC92, RC01).")
+              print("::error::CRITICAL: PR must have at least one release candidate label matching prefix 'RC' followed by digits (e.g., RC92, RC01).")
               sys.exit(1)
 
           print("SUCCESS: PR Metadata validated successfully!")
-          '
+          EOF
 
       # =========================================================================
-      # RUNNER ENVIRONMENT SETUP
+      # RUNNER DEPENDENCY SETUP
       # =========================================================================
       # 2. Set up JDK with Maven Caching
       - name: Set up JDK 17
@@ -94,6 +94,11 @@ jobs:
           pip install codespell
           codespell ${{ steps.changed-files.outputs.all_changed_files }}
 
+      # Check 4. Avoiding Hard Coding Secrets (using raw TruffleHog binary installed via curl)
+      - name: Scan for Hardcoded Secrets
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/v3/scripts/install.sh | sh -s -- -b .
+          ./trufflehog filesystem . --fail
 
       # =========================================================================
       # QUALITY GATES, TESTING, & DEPENDENCY SCANNING
@@ -135,11 +140,13 @@ jobs:
             -Dspotbugs.failOnError=true \
             -T 1C
 
+      # =========================================================================
       # 7. Generate Quality Gate Summary (XML results to GHA Step Summary)
+      # =========================================================================
       - name: Generate Quality Gate Summary
         if: always() # Run even if previous steps failed so we can parse errors
         run: |
-          python -c '
+          python << 'EOF'
           import xml.etree.ElementTree as ET
           import os
 
@@ -181,7 +188,7 @@ jobs:
                       summary_content += f"| {filename} | {line} | {rule} | {msg} |\n"
                   summary_content += "\n"
 
+          # Write directly to GitHub Action step summary
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
               f.write(summary_content)
-          '
-
+          EOF
