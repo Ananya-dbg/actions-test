@@ -85,8 +85,26 @@
             </plugin>
 
             <!-- ================================================================= -->
-            <!-- Static Analysis & Quality Gate Plugins                            -->
+            <!-- Static Analysis, Security, & Quality Gate Plugins                 -->
             <!-- ================================================================= -->
+            <!-- 5. OWASP Dependency-Check (Vulnerable Dependencies) -->
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>9.0.9</version>
+                <configuration>
+                    <failBuildOnCVSS>7.0</failBuildOnCVSS> <!-- Fail build on HIGH vulnerabilities -->
+                    <format>HTML</format>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- 6 & 7. Checkstyle Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
