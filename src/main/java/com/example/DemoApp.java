@@ -12,7 +12,7 @@ public class DemoApp {
     private static final int MAX_ALLOWED_VALUE = 10; // Extract magic numbers to constant (PMD Rule)
 
     public boolean processValue(int value) {
-        // Enforce camelCase variables (Checkstyle)
+        // Enforce camelCase variables (Checkstyle RULE)
         int calculatedResult = value * 2;
 
         if (calculatedResult > MAX_ALLOWED_VALUE) {

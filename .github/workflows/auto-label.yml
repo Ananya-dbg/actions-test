@@ -1,0 +1,57 @@
+name: Auto Add RC Label
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+      - master
+      - develop
+
+jobs:
+  add-rc-label:
+    name: Add RC Label if Missing
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Add RC1 Label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Ensure the RC1 label exists in the repository
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'RC1'
+              });
+            } catch (e) {
+              if (e.status === 404) {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: 'RC1',
+                  color: '0e8a16',
+                  description: 'Release Candidate 1'
+                });
+                console.log('Created RC1 label in repository.');
+              }
+            }
+
+            // Add RC1 label to the PR if no RC label is present
+            const labels = context.payload.pull_request.labels.map(l => l.name);
+            const hasRC = labels.some(l => /^RC\d+$/i.test(l));
+            if (!hasRC) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: ['RC1']
+              });
+              console.log('Added RC1 label to PR #' + context.issue.number);
+            } else {
+              console.log('PR already has an RC label: ' + labels.filter(l => /^RC\d+$/i.test(l)));
+            }
