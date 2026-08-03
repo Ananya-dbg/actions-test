@@ -3,6 +3,7 @@
 <module name="Checker">
     <module name="TreeWalker">
 
+        
         <!-- 4. Avoiding Hard Coding (Secrets): Block password and API key assignments -->
         <module name="RegexpSinglelineJava">
             <property name="format" value="(?i)(password|passwd|secret|apikey|api_key)\s*=\s*&quot;[^&quot;]+&quot;"/>
