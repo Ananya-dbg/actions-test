@@ -24,6 +24,7 @@ public class DemoApp {
 
     public void safeDatabaseQuery(String userInput) {
         String query = "SELECT * FROM users WHERE username = ?"; // Safe parameterized query
+        
         try (Connection conn = DriverManager.getConnection("jdbc:h2:mem:test", "sa", "");
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
@@ -32,7 +33,7 @@ public class DemoApp {
 
         } catch (SQLException e) {
             // PMD requires catch blocks to have log statements or logic
-            LOGGER.severe("Database error occurred: " + e.getMessage());
+            
         }
     }
 }
