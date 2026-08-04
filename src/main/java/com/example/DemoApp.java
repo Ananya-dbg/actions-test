@@ -9,7 +9,7 @@ import java.util.logging.Logger;
 public class DemoApp {
 
     private static final Logger LOGGER = Logger.getLogger(DemoApp.class.getName());
-    private static final int MAX_ALLOWED_VALUE = 10; // Extract magic numbers to constant (PMD Rule)
+    private static final int MAX_ALLOWED_VALUE = 10; //Extract magic numbers to constant (PMD Rule)
 
     public boolean processValue(int value) {
         // Enforce camelCase variables (Checkstyle RULE)
