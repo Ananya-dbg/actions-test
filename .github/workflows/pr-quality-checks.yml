@@ -117,6 +117,9 @@ jobs:
             CHECKSTYLE_OPTS="-Dcheckstyle.skip=true"
           fi
 
+           # set -o pipefail ensures that if Maven fails, the GHA step correctly fails (even when using tee)
+          set -o pipefail
+
           mvn -f pom-ci.xml clean verify --no-transfer-progress \
             $CHECKSTYLE_OPTS \
             -Dpmd.incrementalAnalysis=true \
