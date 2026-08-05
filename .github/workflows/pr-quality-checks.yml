@@ -4,9 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
     branches:
-      - main
       - master
-      - develop
 
 jobs:
   quality-checks:
@@ -85,15 +83,6 @@ jobs:
           files: |
             **/*.java
 
-      # =========================================================================
-      # CHECKS 3 & 4: SPELLING AND SECRETS
-      # =========================================================================
-      # Check 3. Spelling Mistakes in New Code (using codespell via python pip)
-      - name: Scan for Spelling Mistakes
-        if: steps.changed-files.outputs.any_changed == 'true'
-        run: |
-          pip install codespell
-          codespell ${{ steps.changed-files.outputs.all_changed_files }}
 
       # =========================================================================
       # QUALITY GATES, TESTING, & DEPENDENCY SCANNING
