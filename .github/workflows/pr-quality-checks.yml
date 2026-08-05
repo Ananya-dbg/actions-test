@@ -1,4 +1,4 @@
-name: PR Fast Quality Checks
+name: PR Quality Checks
 
 on:
   pull_request:
@@ -125,54 +125,31 @@ jobs:
             -T 1C
 
       # =========================================================================
-      # 7. Generate Quality Gate Summary (XML results to GHA Step Summary)
+      # 7. FUTURE-PROOF SUMMARY: Handle both Metadata and Build Failures
       # =========================================================================
       - name: Generate Quality Gate Summary
-        if: always() # Run even if previous steps failed so we can parse errors
+        if: failure() # Runs if ANY step in the pipeline fails
         run: |
-          python << 'EOF'
-          import xml.etree.ElementTree as ET
-          import os
-
-          summary_content = "## 🔍 Code Quality Gate Summary\n\n"
-
-          # 1. Parse Checkstyle
-          if os.path.exists("target/checkstyle-result.xml"):
-              tree = ET.parse("target/checkstyle-result.xml")
-              root = tree.getroot()
-              violations = []
-              for file in root.findall("file"):
-                  filename = os.path.basename(file.get("name"))
-                  for error in file.findall("error"):
-                      violations.append((filename, error.get("line"), error.get("message")))
-              if violations:
-                  summary_content += "### 🎨 Checkstyle Violations\n\n"
-                  summary_content += "| File | Line | Message |\n"
-                  summary_content += "| --- | --- | --- |\n"
-                  for filename, line, msg in violations:
-                      summary_content += f"| {filename} | {line} | {msg} |\n"
-                  summary_content += "\n"
-
-          # 2. Parse PMD
-          if os.path.exists("target/pmd.xml"):
-              tree = ET.parse("target/pmd.xml")
-              root = tree.getroot()
-              violations = []
-              # Handle PMD namespace
-              ns = {"pmd": "http://pmd.sourceforge.net/ruleset/2.0.0"}
-              for file in root.findall(".//pmd:file", ns):
-                  filename = os.path.basename(file.get("name"))
-                  for violation in file.findall("pmd:violation", ns):
-                      violations.append((filename, violation.get("beginline"), violation.get("rule"), violation.text.strip()))
-              if violations:
-                  summary_content += "### ⚠️ PMD Violations\n\n"
-                  summary_content += "| File | Line | Rule | Message |\n"
-                  summary_content += "| --- | --- | --- | --- |\n"
-                  for filename, line, rule, msg in violations:
-                      summary_content += f"| {filename} | {line} | {rule} | {msg} |\n"
-                  summary_content += "\n"
-
-          # Write directly to GitHub Action step summary
-          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
-              f.write(summary_content)
-          EOF
+          echo "## ❌ Quality Gate Failure Summary" >> $GITHUB_STEP_SUMMARY
+          
+          # CASE 1: The failure happened during the Maven compiling/scanning phase
+          if [ -f maven-build.log ]; then
+            echo "The build failed during the testing or quality scan checks. Here is the list of errors found:" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            
+            # Extracts both [ERROR] lines and generic Error prefixes
+            grep -E "\[ERROR\]|Error:" maven-build.log >> $GITHUB_STEP_SUMMARY || true
+            
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          
+          # CASE 2: The failure happened early (JIRA ticket, Branch, or PR Label violation)
+          else
+            echo "### ⚠️ PR Metadata Blocked" >> $GITHUB_STEP_SUMMARY
+            echo "The pipeline was blocked **before** compiling the code because the Pull Request metadata is invalid." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**How to fix:**" >> $GITHUB_STEP_SUMMARY
+            echo "1. Ensure the branch name and PR title contain the ticket number matching \`SCST-<number>\` (e.g., \`SCST-1234\`)." >> $GITHUB_STEP_SUMMARY
+            echo "2. Ensure a release candidate label (e.g., \`RC92\`) has been added to the Pull Request." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "*(The exact error is highlighted in red at the very top of this Pull Request page!)*" >> $GITHUB_STEP_SUMMARY
+          fi
