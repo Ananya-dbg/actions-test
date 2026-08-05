@@ -39,7 +39,6 @@
     </dependencies>
 
     <build>
-        <!-- Point this standalone POM to your project's code folders -->
         <sourceDirectory>src/main/java</sourceDirectory>
         <testSourceDirectory>src/test/java</testSourceDirectory>
 
@@ -96,7 +95,7 @@
                 <configuration>
                     <failBuildOnCVSS>7.0</failBuildOnCVSS> <!-- Fail build on HIGH vulnerabilities -->
                     <format>HTML</format>
-                    <!-- FIXED: Prevents NVD connection/timeout errors from crashing your pipeline -->
+                    <!-- Prevents NVD connection/timeout errors from crashing your pipeline -->
                     <failOnError>false</failOnError> 
                 </configuration>
                 <executions>
