@@ -24,7 +24,7 @@ jobs:
       # =========================================================================
       # CHECKS 1 & 2: PR METADATA VALIDATION (Secured with Env Vars & Heredoc)
       # =========================================================================
-      # Checks 1 & 2. Validate JIRA SCST Number and RC Labels in PR
+      # 2. Checks 1 & 2. Validate JIRA SCST Number and RC Labels in PR
       - name: Validate PR Metadata (Branch, Title & RC Labels)
         env:
           BRANCH_NAME: ${{ github.head_ref }}
@@ -67,7 +67,7 @@ jobs:
       # =========================================================================
       # RUNNER DEPENDENCY SETUP
       # =========================================================================
-      # 2. Set up JDK with Maven Caching
+      # 3. Set up JDK with Maven Caching
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -75,7 +75,7 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      # 3. Detect Changed Java Files
+      # 4. Detect Changed Java Files
       - name: Get Changed Java Files
         id: changed-files
         uses: tj-actions/changed-files@v41
@@ -87,7 +87,7 @@ jobs:
       # =========================================================================
       # QUALITY GATES, TESTING, & DEPENDENCY SCANNING
       # =========================================================================
-      # 4. Format changed files relative paths for Checkstyle
+      # 5. Format changed files relative paths for Checkstyle
       - name: Format Files for Checkstyle
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
@@ -96,7 +96,7 @@ jobs:
           echo "CHECKSTYLE_INCLUDES=$FORMATTED_LIST" >> $GITHUB_ENV
           echo "Detected changed files for scanning: $FORMATTED_LIST"
 
-      # 5. Restore PMD Cache
+      # 6. Restore PMD Cache
       - name: Restore PMD Cache
         uses: actions/cache@v4
         with:
@@ -105,7 +105,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pmd-
 
-      # 6. Run Fast Tests, Dependency Scan, and Quality Gates
+      # 7. Run Fast Tests, Dependency Scan, and Quality Gates
       # This single command compiles, runs Unit/Integration tests, scans Checkstyle, 
       # PMD, SpotBugs, and OWASP Dependency-Check natively.
       - name: Run Build and Quality Gates
