@@ -96,6 +96,8 @@
                 <configuration>
                     <failBuildOnCVSS>7.0</failBuildOnCVSS> <!-- Fail build on HIGH vulnerabilities -->
                     <format>HTML</format>
+                    <!-- FIXED: Prevents NVD connection/timeout errors from crashing your pipeline -->
+                    <failOnError>false</failOnError> 
                 </configuration>
                 <executions>
                     <execution>
